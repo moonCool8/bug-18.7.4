@@ -1,0 +1,173 @@
+
+<!--  -->
+<template>
+    <comment></comment>
+    <view class="scroll-box">
+      <scroll-view class="left" scroll-y scroll-with-animation @scroll="">
+          <block wx:for="{{productList}}">
+              <view data-id="{{item.cat_id}}" class="item {{index==productIndex?'active':''}}" @tap="addActive({{index}})" >
+                  {{item.cat_name}}
+              </view>
+          </block>
+      </scroll-view>
+      <scroll-view class="right" scroll-y scroll-with-animation @scroll="">
+        <block wx:for="{{productList[productIndex].children}}" wx:for-item="productContent">
+          <image class="right-image" src="/image/titleImage.png"></image>
+          <view class="right-title">
+            <text>/</text>
+            <text class="title-text">{{productContent.cat_name}}</text>
+            <text>/</text>
+          </view>
+          <view class="right-content">
+            <block wx:for="{{productContent.children}}" wx:for-item="products">
+              <navigator class="contents">
+                <image src="https://www.zhengzhicheng.cn/{{products.cat_icon}}"></image>
+                <text>{{products.cat_name}}</text>
+              </navigator>
+            </block>
+          </view>
+        </block>
+      </scroll-view>
+  </view>
+
+</template>
+
+<script>
+import wepy from 'wepy'
+var method = require('../utils/func.js')
+import comment from '../comment/comment'
+export default class Category extends wepy.page {
+  config = {
+    navigationBarTitleText: '分类'
+  }
+
+  data = {
+    productIndex: 0,
+    productList: []
+  }
+
+  components = {
+    comment: comment
+  }
+
+  methods = {
+    addActive(index) {
+      // console.log(e);
+      //重新设定productIndex的值用来添加active类
+      this.productIndex = index
+    }
+  }
+
+  events = {}
+
+  watch = {}
+
+  computed = {}
+
+  onLoad() {
+    method.request({
+      url: 'api/public/v1/categories',
+      success: backData => {
+        console.log(backData)
+        this.productList = backData.data.message
+        this.$apply()
+      }
+    })
+  }
+
+  onShow() {}
+}
+</script>
+
+<style lang='less'>
+page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.scroll-box {
+  flex: 1;
+  display: flex;
+  .left {
+    width: 200rpx;
+    height: 100%;
+    // background-color: red;
+    .item {
+      width: 198rpx;
+      height: 100rpx;
+      line-height: 100rpx;
+      text-align: center;
+      background-color: #f4f4f4;
+      font-size: 24rpx;
+      border-bottom: 1rpx solid #eeeeee;
+      position: relative;
+      &.active {
+        background-color: #fff;
+        color: #ff2d4a;
+        &::before {
+          content: '';
+          position: absolute;
+          top: 20rpx;
+          left: 0;
+          width: 8rpx;
+          height: 60rpx;
+          background-color: #ff2d4a;
+        }
+      }
+    }
+  }
+  .right {
+    padding: 20rpx 16rpx;
+    box-sizing: border-box;
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    .right-image {
+      width: 100%;
+      height: 180rpx;
+    }
+    .right-title {
+      padding: 40rpx 0 20rpx;
+      display: flex;
+      justify-content: center;
+      box-sizing: border-box;
+      text {
+        display: block;
+        font-size: 30rpx;
+        color: #cccccc;
+      }
+      .title-text {
+        color: #000000;
+        padding: 0 30rpx;
+      }
+    }
+    .right-content {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      .contents {
+        width: 33.3333%;
+        height: 150rpx;
+        justify-content: center;
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        image {
+          width: 100rpx;
+          height: 65rpx;
+        }
+        text {
+          font-size: 26rpx;
+        }
+      }
+    }
+  }
+}
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  color: transparent;
+}
+</style>

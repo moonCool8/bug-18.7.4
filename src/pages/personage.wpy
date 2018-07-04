@@ -1,0 +1,286 @@
+
+<!--  -->
+<template>
+  <view class='top'>
+    <view class="top-img">
+      <icon class="iconfont icon-shezhi"></icon>
+      <button bindgetuserinfo="dologin" open-type="getUserInfo">点击</button>
+      <image src="{{userInfo?userInfo.avatarUrl:'/image/logo.jpg'}}"/>
+      <icon class="iconfont icon-xiaoxi"></icon>
+    </view>
+    <view class="top-text">
+      <navigator>{{userInfo.nickName}}登录</navigator>/<navigator>注册</navigator>
+    </view>
+  </view>
+  <view class="collects">
+    <view class="collect">
+      <text class="num">0</text>
+      <text>收藏的店铺</text>
+    </view>
+    <view class="collect">
+      <text class="num">0</text>
+      <text>收藏的商品</text>
+    </view>
+    <view class="collect">
+      <text class="num">0</text>
+      <text>关注的商品</text>
+    </view>
+    <view class="collect">
+      <text class="num">0</text>
+      <text>我的足迹</text>
+    </view>
+  </view>
+  <view class="order">
+    <view class="order-title">我的订单</view>
+    <view @tap="toOrder" class="order-content">
+      <view class="item">
+        <icon class="iconfont icon-daifukuan"></icon>
+        <text>待付款</text>
+      </view>
+      <view class="item">
+        <icon class="iconfont icon-daishouhuo"></icon>
+        <text>待收货</text>
+      </view>
+      <view class="item">
+        <icon class="iconfont icon-tuikuan"></icon>
+        <text>退款/退货</text>
+      </view>
+      <view class="item">
+        <icon class="iconfont icon-dingdan"></icon>
+        <text>全部订单</text>
+      </view>
+    </view>
+  </view>
+  <view class="address-box">
+    <view @tap="setAddress" class="address" >
+      <text>收货地址管理</text>
+      <icon class="iconfont icon-jiantouyou"></icon>
+    </view>
+  </view>
+  <view class="contact-box">
+    <view class="contact">
+      <text>联系客服</text>
+      <icon>400-618-4000</icon>
+    </view>
+    <view class="contact">
+      <text>意见反馈</text>
+      <icon class="iconfont icon-jiantouyou"></icon>
+    </view>
+    <view class="contact">
+      <text>关于我们</text>
+      <icon class="iconfont icon-jiantouyou"></icon>
+    </view>
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+export default class Personage extends wepy.page {
+  config = {
+    navigationBarTitleText: ''
+  }
+
+  data = {
+    userInfo: undefined
+  }
+
+  components = {}
+
+  methods = {
+    //获取用户信息
+    getUserInfo() {
+      wx.getUserInfo({
+        withCredentials: 'false',
+        lang: 'zh_CN',
+        success: res => {
+          console.log(res)
+          this.userInfo = res.userInfo
+          this.$apply()
+        }
+      })
+    },
+    //得到地址信息
+    setAddress() {
+      wx.chooseAddress({
+        success: res => {
+          console.log(res)
+        }
+      })
+    },
+    //去订单页面
+    toOrder() {
+      wx.navigateTo({
+        url: '/pages/order'
+      })
+    },
+    dologin(e) {
+      console.log(e)
+      this.userInfo = e.detail.userInfo
+    }
+  }
+
+  events = {}
+
+  watch = {}
+
+  computed = {}
+
+  onLoad() {
+    //也可以页面加载完成就改变用户信息
+
+    // wx.getUserInfo({
+    //   withCredentials: 'false',
+    //   lang: 'zh_CN',
+    //   success: res => {
+    //     console.log(res)
+    //     this.userInfo = res.userInfo
+    //     this.$apply()
+    //   }
+    // })
+  }
+
+  onShow() {}
+}
+</script>
+
+<style lang='less'>
+page {
+  background-color: #f4f4f4;
+}
+//顶部头像
+.top {
+  width: 100%;
+  height: 415rpx;
+  background-color: #ff2d4a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  .top-img {
+    display: flex;
+    align-items: center;
+    position: relative;
+    button {
+      width: 140rpx;
+      height: 140rpx;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      opacity: 0;
+      z-index: 998;
+    }
+    image {
+      margin: 0 65rpx;
+      width: 140rpx;
+      height: 140rpx;
+      border-radius: 50%;
+      border: 5rpx solid #fff;
+    }
+    .iconfont {
+      color: #fff;
+    }
+  }
+  .top-text {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 32rpx;
+    color: #fff;
+    navigator {
+      display: inline-block;
+    }
+  }
+}
+//收藏区域
+.collects {
+  width: 100%;
+  height: 120rpx;
+  margin-top: -26rpx;
+  display: flex;
+  padding: 0rpx 16rpx 0 16rpx;
+  box-sizing: border-box;
+  .collect {
+    background-color: #fff;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #9d9d9d;
+    font-size: 24rpx;
+  }
+}
+//订单区域
+.order {
+  margin-top: 20rpx;
+  width: 100%;
+  padding: 0 16rpx;
+  box-sizing: border-box;
+  height: 255rpx;
+  .order-title {
+    background-color: #fff;
+    height: 88rpx;
+    line-height: 88rpx;
+    border-bottom: 1rpx solid #f4f4f4;
+    padding-left: 30rpx;
+    font-size: 30rpx;
+  }
+  .order-content {
+    background-color: #fff;
+    height: 166rpx;
+    display: flex;
+    .item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      icon {
+        font-size: 50rpx;
+        color: #ff2d4a;
+      }
+      text {
+        margin-top: 10rpx;
+        display: block;
+        font-size: 28rpx;
+      }
+    }
+  }
+}
+//收货地址区域和联系商家区域
+.address-box,
+.contact-box {
+  margin-top: 20rpx;
+  padding: 0 16rpx;
+  box-sizing: border-box;
+  .address,
+  .contact {
+    width: 100%;
+    background-color: #fff;
+    padding: 0 32rpx;
+    box-sizing: border-box;
+    height: 87rpx;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text {
+      font-size: 30rpx;
+    }
+    icon {
+      display: block;
+      margin-top: -10rpx;
+      font-size: 32rpx;
+      color: #dedede;
+    }
+  }
+}
+.contact-box {
+  margin-bottom: 20rpx;
+  .contact {
+    border-bottom: 1rpx solid #dedede;
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
+}
+</style>

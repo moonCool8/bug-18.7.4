@@ -1,0 +1,394 @@
+
+<!--  -->
+<template>
+  <swiper indicator-dots="{{indicatorDots}}" @tap="bigImage" circular="{{circular}}"
+  autoplay="{{autoplay}}" interval="{{interval}}" duration="{{duration}}">
+    <block wx:for="{{detailData.pics}}">
+      <swiper-item >
+        <image src="{{item.pics_mid_url}}" class="slide-image" width="355" height="150"/>
+      </swiper-item>
+    </block>
+  </swiper>
+  <view class="detail-box">
+    <view class="detail-price">￥{{detailData.goods_price}}</view>
+    <view class="detail-text">
+      <view class="left">{{detailData.goods_name}}</view>
+      <view class="right">
+        <icon class="iconfont icon-shoucang"></icon><text>收藏</text>
+      </view>
+    </view>
+    <view class="detail-express">
+      快递: <text>免运费</text>
+    </view>
+  </view>
+  <view class="jianxi"></view>
+  <view class="chuxiao">
+    促销<text class="man">满300减30</text>
+  </view>
+  <view class="tab">
+    <view class="tab-bar">
+      <view @tap="changeTab({{0}})" class="items {{tabIndex==0?'active':''}}">图文介绍</view>
+      <view @tap="changeTab({{1}})"  class="items {{tabIndex==1?'active':''}}">参数规格</view>
+    </view>
+    <view class="tab-content">
+      <view class="item" hidden="{{tabIndex!=0}}">
+        <!-- 引入模板 -->
+        <import src="../wxParse/wxParse.wxml"/>
+        <!-- //这里data中article为bindName -->
+        <template is="wxParse" data="{{wxParseData:article.nodes}}"/>
+      </view>
+      <view class="item" hidden="{{tabIndex!=1}}">
+        <block wx:for="{{detailData.attrs}}">
+          <view class="canshu">
+            <view class="left">{{item.attr_name}}</view>
+            <view class="right">{{item.attr_value}}</view>
+          </view>
+        </block>
+      </view>
+    </view>
+  </view>
+  
+  <view class="footer">
+    <view class="kefu">
+      <icon class="iconfont icon-kefu"></icon>
+      <text>联系客服</text>
+    </view>
+    <view @tap="toBuycar" class="cart">
+      <icon class="iconfont icon-gouwuche"></icon>
+      <text>购物车</text>
+    </view>
+    <view @tap="addCart" class="addCar">加入购物车</view>
+    <view class="onceBuy">立即购买</view>
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+var WxParse = require('../wxParse/wxParse.js')
+var method = require('../utils/func.js')
+export default class Detail extends wepy.page {
+  config = {
+    navigationBarTitleText: '商品详情'
+  }
+
+  data = {
+    //商品id
+    goods_id: '',
+    //商品数据
+    detailData: [],
+    //轮播图参数
+    indicatorDots: true,
+    circular: true,
+    autoplay: true,
+    interval: 5000,
+    duration: 1000,
+    //图片放大参数
+    previewImageUrl: [],
+
+    goodData: {},
+    //tab的索引
+    tabIndex: 0
+  }
+
+  components = {}
+
+  methods = {
+    //图片全频放大
+    bigImage() {
+      console.log(22)
+      wx.previewImage({
+        urls: this.previewImageUrl
+      })
+    },
+    //去购物车
+    toBuycar() {
+      wx.switchTab({
+        url: '/pages/buycar'
+      })
+    },
+    //改变tab的切换
+    changeTab(index) {
+      // console.log(index)
+      this.tabIndex = index
+    },
+    //加入购物车
+    addCart(){
+      wx.getStorage({
+        key: 'cart',
+        success: res => {
+          console.log(res);
+          this.goodData = res.data
+          this.$apply();
+          if(this.goodData[this.goods_id]){
+            this.goodData[this.goods_id] += 1;
+          }else{
+            this.goodData[this.goods_id] = 1;
+          }
+
+          wx.setStorage({
+            key: 'cart',
+            data: this.goodData
+          });
+          this.$apply();
+        },
+        fail: res=>{
+          console.log(res);
+          this.goodData = {}
+          this.goodData[this.goods_id] = 1;
+          wx.setStorage({
+            key: 'cart',
+            data: this.goodData
+          });
+          this.$apply();
+        }
+      });
+
+      //提示用户
+      wx.showToast({
+        title: '加往购物车中',
+        icon: 'loading',
+        duration: 1000,
+        mask: true,
+      });
+    }
+  }
+
+  events = {}
+
+  watch = {}
+
+  computed = {}
+
+  onLoad(e) {
+    console.log(e)
+    this.goods_id = e.id
+    method.request({
+      url: 'api/public/v1/goods/detail',
+      data: {
+        goods_id: this.goods_id
+      },
+      success: res => {
+        console.log(res)
+        this.detailData = res.data.message
+        this.$apply()
+        this.detailData.pics.forEach(res => {
+          //把图片地址添加进数组
+          console.log(res)
+          console.log(this.goods_id)
+          this.previewImageUrl.push(res.pics_mid)
+          // console.log(this.previewImageUrl);
+        })
+        this.$apply()
+        //商品的一系列图片
+        var goods_introduce = this.detailData.goods_introduce
+        /**
+         * WxParse.wxParse(bindName , type, data, target,imagePadding)
+         * 1.bindName绑定的数据名(必填)
+         * 2.type可以为html或者md(必填)
+         * 3.data为传入的具体数据(必填)
+         * 4.target为Page对象,一般为this(必填)
+         * 5.imagePadding为当图片自适应是左右的单一padding(默认为0,可选)
+         */
+        var that = this
+        WxParse.wxParse('article', 'html', goods_introduce, that)
+      }
+    })
+  }
+
+  onShow() {}
+}
+</script>
+
+
+<style lang='less'>
+@import '../wxParse/wxParse.wxss';
+page {
+  width: 100%;
+  padding-bottom: 100rpx;
+}
+swiper {
+  height: 720rpx;
+  image {
+    display: block;
+    margin: 0 auto;
+    height: 100%;
+  }
+}
+.detail-box {
+  padding-left: 16rpx;
+  .detail-price {
+    height: 125rpx;
+    line-height: 125rpx;
+    font-size: 45rpx;
+    color: #eb4450;
+  }
+  .detail-text {
+    display: flex;
+
+    .left {
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      word-break: break-all;
+      font-size: 30rpx;
+      flex: 1;
+    }
+    .right {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 142rpx;
+      height: 142rpx;
+      border-left: 1rpx solid #eeeeee;
+      margin-left: 80rpx;
+      icon {
+      }
+      text {
+      }
+    }
+  }
+  .detail-express {
+    font-size: 28rpx;
+    color: #999999;
+    margin-bottom: 20rpx;
+    text {
+      display: inline-block;
+      margin-left: 16rpx;
+    }
+    .man {
+      margin-left: 15rpx;
+    }
+  }
+}
+.jianxi {
+  width: 100%;
+  height: 20rpx;
+  background-color: #ebebeb;
+}
+.chuxiao {
+  background-color: #fff;
+  height: 68rpx;
+  line-height: 68rpx;
+  font-size: 28rpx;
+  padding-left: 16rpx;
+  text {
+    color: #ed4450;
+    display: inline-block;
+    margin-left: 40rpx;
+  }
+}
+.tab {
+  width: 100%;
+  .tab-bar {
+    width: 100%;
+    height: 80rpx;
+    display: flex;
+    border-top: 1rpx solid #eee;
+    border-bottom: 1rpx solid #eee;
+    .items {
+      width: 50%;
+      text-align: center;
+      line-height: 80rpx;
+      font-size: 32rpx;
+      position: relative;
+      &.active {
+        color: #eb4450;
+        &::before {
+          content: '';
+          position: absolute;
+          width: 100%;
+          height: 10rpx;
+          background-color: #eb4450;
+          left: 0;
+          bottom: 0;
+        }
+      }
+      &:first-child {
+        border-right: 1rpx solid #eee;
+      }
+    }
+  }
+  .tab-content {
+    padding: 30rpx 0;
+    .item {
+      width: 100%;
+      .canshu {
+        display: flex;
+        width: 100%;
+        height: 100rpx;
+        text-align: center;
+        font-size: 28rpx;
+        border: 1rpx solid #eeeeee;
+        &:last-child{
+          border-top: none;
+        }
+        .left {
+          width: 50%;
+          line-height: 100rpx;
+          height: 100%;
+        }
+        .right {
+          border-left: 1rpx solid #eeeeee;
+          width: 50%;
+          height: 100%;
+          line-height: 100rpx;
+        }
+      }
+    }
+  }
+}
+.footer {
+  width: 100%;
+  height: 100rpx;
+  background-color: #fff;
+  display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  .kefu {
+    width: 20%;
+    height: 100%;
+    font-size: 24rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #999999;
+  }
+  .cart {
+    width: 20%;
+    height: 100%;
+    font-size: 24rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #999999;
+  }
+  .addCar {
+    width: 30%;
+    height: 100%;
+    background-color: #f4b73f;
+    font-size: 32rpx;
+    color: #fff;
+    line-height: 100rpx;
+    text-align: center;
+  }
+  .onceBuy {
+    width: 30%;
+    height: 100%;
+    background-color: #eb4450;
+    font-size: 32rpx;
+    color: #fff;
+    line-height: 100rpx;
+    text-align: center;
+  }
+}
+.wxParse-img {
+  width: 100%;
+  display: block;
+}
+.wxParse-span {
+  padding: 0 16rpx;
+}
+</style>

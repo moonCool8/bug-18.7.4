@@ -1,0 +1,458 @@
+
+<!--  -->
+<template>
+  <view class="cart" hidden="{{isFull}}">
+    <icon class="iconfont icon-gouwuche"></icon>
+    <text>您的购物车空空如也</text>
+  </view>
+  <view class="goods">
+    <view @tap="changeAddress" class="goods-address">
+      <view class="top">
+        <view class="left">
+          收货人: <text>{{addressData.userName}}</text>
+        </view>
+        <view class="right">
+          <text>{{addressData.telNumber}}</text>
+          <icon class="iconfont icon-jiantouyou"></icon>
+        </view>
+      </view>
+      <view class="bottom"><text class="shouhuo">收货地址</text>: <text class="juti">{{addressData.provinceName}}{{addressData.cityName}}{{addressData.countyName}}{{addressData.detailInfo}}</text></view>
+    </view>
+    <image class="xiantiao" src="/image/border.PNG"></image>
+    <view class="goods-content">
+      <view class="content-title">
+        <icon class="iconfont icon-dianpu"></icon><text>优购生活馆</text>
+      </view>
+      <view class="contents">
+        <block wx:for="{{stroageData}}">
+          <view class="goods-data">
+            <view class="one">
+              <radio @tap="change({{index}})" checked="{{item.isChecked}}" color="#eb4450"/>
+            </view>
+            <view class="two">
+              <image src="{{item.goods_small_logo}}"></image>
+            </view>
+            <view class="three">
+              <view class="top">
+                {{item.goods_name}}
+              </view>
+              <view class="bottom">
+                <view class="left">￥<text>{{item.goods_price}}</text>.00</view>
+                <view class="right">
+                  <text @tap="sub({{item.goods_id}})" class="jian">-</text>
+                  <text class="num">{{cart[item.goods_id]}}</text>
+                  <text @tap="add({{item.goods_id}})" class="jia">+</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </block>
+      </view>
+    </view>
+    
+  </view>
+  <view class="jieshuan">
+      <view class="one">
+        <checkbox @tap="{{checkedAll}}" color="#eb4450" checked="{{isCheckedAll}}"/><text>全选</text>
+      </view>
+      <view class="two">
+        <view class="top">
+          <text class="heji">合计:</text> ￥<text class="price">{{totalPrice}}</text>.00 
+        </view>
+        <view class="mianfei">包含运费</view>
+      </view>
+      <view class="three" @tap="jieshuan">
+        结算({{GoodsNum}})
+      </view>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+var method = require('../utils/func.js')
+export default class Buycar extends wepy.page {
+  config = {
+    navigationBarTitleText: ''
+  }
+
+  data = {
+    //显示隐藏另一处代码
+    isFull: false,
+    //地址信息
+    addressData: undefined,
+    //缓存中的商品个数及id
+    cart: undefined,
+    //缓存的商品具体信息
+    stroageData: [],
+    //保存全选反选状态
+    isCheckedAll:true
+  }
+
+  components = {}
+
+  methods = {
+    //点击切换地址信息
+    changeAddress() {
+      wx.chooseAddress({
+        success: res => {
+          console.log(res)
+          this.addressData = res
+          this.$apply()
+
+          wx.setStorage({
+            key: 'address',
+            data: res
+          })
+        }
+      })
+    },
+    //商品个数递减
+    sub(goods_id) {
+      this.cart[goods_id]--
+      if (this.cart[goods_id] == 0) {
+        //删除对象中的数据
+        delete this.cart[goods_id]
+        //清除缓存中被删除的数据
+        wx.setStorage({
+          key: 'cart',
+          data: this.cart
+        })
+
+        for(var i=0;i<this.stroageData.length;i++){
+          if(goods_id == this.stroageData[i].goods_id){
+            this.stroageData.splice(i,1);
+          }
+        }
+        wx.removeStorage({
+          key: 'cart'
+        });
+        this.$apply();
+      }
+      
+    },
+    //商品个数累加
+    add(goods_id) {
+      this.cart[goods_id]++
+    },
+    change(index) {
+      console.log(index)
+      this.stroageData[index].isChecked = !this.stroageData[index].isChecked
+      
+    },
+    checkedAll(){
+      this.isCheckedAll = !this.isCheckedAll
+    },
+    
+  }
+
+  events = {}
+
+  watch = {}
+
+  computed = {
+    //计算总金额
+    totalPrice() {
+      var totalPrice = 0
+      for (var i = 0; i < this.stroageData.length; i++) {
+        if (this.stroageData[i].isChecked == true) {
+          var price = this.stroageData[i].goods_price
+          var count = this.cart[this.stroageData[i].goods_id]
+
+          totalPrice += price * count
+        }
+      }
+      return totalPrice;
+    },
+    //计算商品总共有几类
+    GoodsNum(){
+      var num = 0;
+      this.stroageData.forEach(element => {
+        if(element.isChecked = true){
+          num++
+        }
+      });
+      return num
+    }
+  }
+
+  onLoad() {}
+
+  onShow() {
+    wx.getStorage({
+      key: 'cart',
+      success: res => {
+        console.log(res)
+        //判断是否有值
+        //获取缓存的购买商品信息
+        this.isFull = true
+        this.cart = res.data
+        this.$apply()
+
+        //切割数据得到要的ID才能调数据
+        var id = ''
+        for (const key in this.cart) {
+          id += key
+          id += ','    
+        }
+        //去掉末尾的逗号，形成一个数组当成参数
+        id = id.slice(0, -1)
+        // console.log(66666)
+        console.log(id)
+        //调用接口获取缓存具体数据有哪些
+        method.request({
+          url: 'api/public/v1/goods/goodslist',
+          data: {
+            goods_ids: id
+          },
+          success: res => {
+        console.log(66666)
+
+            console.log(res)
+            //保存一个isChecked进取storageData
+
+            // for(var i=0;i<res.data.message.length;i++){
+            //   res.data.message[i].isChecked = false;
+            // }
+
+            // this.stroageData = res.data.message
+            this.$apply()
+            
+          }
+        })
+
+        
+      },
+      fail: res => {
+        console.log(res)
+        this.isFull = false
+        this.$apply()
+      }
+    })
+
+    // 去缓存中获取 地址信息 如果有 直接获取 赋值到变量中
+    wx.getStorage({
+      key: 'address',
+      success: res => {
+        // console.log(res);
+        this.addressData = res.data
+        this.$apply()
+      }
+    })
+  }
+}
+</script>
+
+<style lang='less'>
+page {
+  background-color: #ebebeb;
+  // height: 100%;
+  position: relative;
+}
+.cart {
+  padding-top: 100rpx;
+  height: 100%;
+  icon {
+    width: 180rpx;
+    height: 180rpx;
+    background-color: #eb4450;
+    border-radius: 50%;
+    color: #fff;
+    text-align: center;
+    line-height: 180rpx;
+    display: block;
+    margin: 0 auto;
+    font-size: 100rpx;
+  }
+  text {
+    margin-top: 50rpx;
+    display: block;
+    text-align: center;
+    font-size: 28rpx;
+    line-height: 60rpx;
+  }
+}
+.goods {
+  .goods-address {
+    height: 208rpx;
+    padding: 0 20rpx;
+    background-color: #fff;
+    .top {
+      height: 104rpx;
+      line-height: 104rpx;
+      font-size: 30rpx;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      .left {
+        text {
+          display: inline-block;
+          padding-left: 20rpx;
+        }
+      }
+      .right {
+        icon {
+          display: inline-block;
+          padding-left: 40rpx;
+        }
+      }
+    }
+    .bottom {
+      height: 104rpx;
+      display: flex;
+      align-items: center;
+      font-size: 30rpx;
+      font-weight: 700;
+      .shouhuo {
+        display: block;
+      }
+      .juti {
+        // display: inline-block;
+        padding-left: 20rpx;
+      }
+    }
+  }
+  .goods-content {
+    margin-top: 20rpx;
+    background-color: #fff;
+    padding-left: 30rpx;
+    .content-title {
+      height: 87rpx;
+      display: flex;
+      font-size: 30rpx;
+      border-bottom: 1rpx solid #eeeeee;
+      icon {
+        line-height: 87rpx;
+        color: #cccccc;
+      }
+      text {
+        margin-left: 20rpx;
+        line-height: 87rpx;
+        font-weight: 700;
+      }
+    }
+    .contents {
+    }
+  }
+}
+radio{
+  transform: scale(0.8);
+}
+.contents {
+  padding-bottom: 100rpx;
+  width: 100%;
+  padding-right: 20rpx;
+  .goods-data {
+    width: 100%;
+    height: 205rpx;
+    border-bottom: 1rpx solid #eee;
+    display: flex;
+    .one {
+      display: block;
+      margin-right: 30rpx;
+      radio {
+        line-height: 205rpx;
+      }
+    }
+    .two {
+      box-sizing: border-box;
+      padding: 22rpx 0;
+
+      height: 100%;
+      image {
+        width: 160rpx;
+        height: 160rpx;
+      }
+    }
+    .three {
+      width: 100%;
+      padding: 22rpx;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      .top {
+        font-size: 28rpx;
+        height: 80rpx;
+        overflow: hidden;
+      }
+      .bottom {
+        display: flex;
+        justify-content: space-between;
+        .left {
+          font-weight: 700;
+          font-size: 24rpx;
+          color: #eb4450;
+          text {
+            font-size: 30rpx;
+          }
+        }
+        .right {
+          display: flex;
+          text {
+            display: block;
+            width: 52rpx;
+            text-align: center;
+            line-height: 42rpx;
+            height: 42rpx;
+          }
+          .jian,
+          .jia {
+            border: 2rpx solid #ccc;
+          }
+        }
+      }
+    }
+  }
+}
+.xiantiao {
+  display: block;
+  width: 100%;
+  height: 14rpx;
+}
+.jieshuan {
+  left: 0;
+  bottom: 0rpx;
+  position: fixed;
+  width: 100%;
+  margin-top: 60rpx;
+  height: 97rpx;
+  background-color: #fff;
+  display: flex;
+  .one {
+    width: 30%;
+    line-height: 97rpx;
+    padding-left: 20rpx;
+    text {
+      padding-left: 20rpx;
+      font-size: 30rpx;
+    }
+  }
+  .two {
+    width: 40%;
+    .top {
+      margin-top: 15rpx;
+      color: #eb4450;
+      font-size: 24rpx;
+      .heji {
+        color: #222222;
+        font-size: 28rpx;
+      }
+      .price {
+        font-size: 30rpx;
+      }
+    }
+    .mianfei {
+      color: #a0a0a0;
+      font-size: 24rpx;
+    }
+  }
+  .three {
+    width: 30%;
+    height: 100%;
+    background-color: #eb4450;
+    color: #fff;
+    text-align: center;
+    line-height: 97rpx;
+    font-size: 30rpx;
+  }
+}
+</style>
